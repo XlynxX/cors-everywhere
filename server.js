@@ -1,38 +1,21 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
+// server.js
 
-const app = express();
+var cors_proxy = require('cors-anywhere');
+var express = require('express');
 
-// Configure CORS properly
-app.use(cors({
-  origin: true,              // allow any origin (or set specific domain)
-  credentials: true          // allow credentials (cookies, etc.)
-}));
+// Set up a basic Express app
+var app = express();
 
-// Proxy endpoint
-app.get('/', async (req, res) => {
-  const targetUrl = req.query.url;
-  if (!targetUrl) return res.status(400).send('Missing ?url=');
+// Listen on a specific host and port
+var host = process.env.HOST || '0.0.0.0';
+var port = process.env.PORT || 8080;
 
-  try {
-    const response = await axios.get(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Cookie': req.headers.cookie || ''
-      }
-    });
-
-    // Set proper CORS headers on the response
-    res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.set('Access-Control-Allow-Credentials', 'true');
-
-    res.status(response.status).send(response.data);
-  } catch (err) {
-    console.error('Proxy error:', err.message);
-    res.status(err.response?.status || 500).send(err.message);
-  }
+cors_proxy.createServer({
+  originWhitelist: [],  // Allow all origins (adjust as needed)
+  requireHeader: ['origin', 'x-requested-with'],
+  removeHeaders: [],    // Do not remove cookies, pass them along
+  // You may need to add this for cookie support
+  allowCredentials: true
+}).listen(port, host, function() {
+  console.log('CORS Anywhere running on ' + host + ':' + port);
 });
-
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
